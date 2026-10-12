@@ -1,0 +1,9 @@
+interface_id,service_name,total_flujos,total_gb,costo_nat_usd,pico_max_gb
+eni-0b22334455,Analytics-Spark-Worker-01,6006,261.28,11.64,2.03
+eni-0a11223344,ETL-Data-Sync-Agent,6015,261.23,11.64,2.04
+eni-028899aabb,Storage-Backup-Sync-Agent,5942,252.73,11.26,2.01
+eni-0c33445566,Core-API-Gateway,6160,5.72,0.13,0.01
+eni-0e55667788,PostgreSQL-Database-Primary,6094,5.61,0.13,0.01
+eni-01778899aa,Ingress-ALB-Frontend,6003,5.5,0.13,0.01
+eni-0f66778899,Redis-Cache-Cluster,5989,5.49,0.13,0.01
+eni-0d44556677,Auth-Identity-Service,5882,5.4,0.13,0.01

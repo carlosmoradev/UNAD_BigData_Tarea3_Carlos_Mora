@@ -1,0 +1,18 @@
+# Entornos virtuales y Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDEs y SO
+.vscode/
+.idea/
+.DS_Store
+
+# Herramientas de agente y cachés
+.atl/
+
+# Documentos administrativos / guías académicas UNAD (se preservan en local)
+*.pdf
+*.docx
