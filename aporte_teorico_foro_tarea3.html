@@ -1,0 +1,301 @@
+<div style="font-family: Arial, Helvetica, sans-serif; font-size: 14px; line-height: 1.6; color: #2d3748; max-width: 950px; margin: 0 auto;">
+
+  <p><strong>Asunto:</strong> Aporte Individual – Actividad 1: Investigación Teórica (Spark y Kafka) y Socialización de Avance Técnico</p>
+
+  <p>Estimado tutor Javier Antonio Ballesteros y compañeros del Grupo 27,</p>
+
+  <p>Espero se encuentren muy bien. Comparto mi primer aporte significativo correspondiente a la <strong>Actividad 1 (Investigación)</strong> de la Tarea 3, dando respuesta a los interrogantes planteados en la guía de aprendizaje sobre la arquitectura de Apache Spark, RDDs, DataFrames y Apache Kafka.</p>
+
+  <p>Adicionalmente, aprovecho para socializar el caso de uso y dataset que seleccioné para el componente práctico: un conjunto de datos sintético estructurado de <strong>AWS VPC Flow Logs (versión 2)</strong> orientado a FinOps (control de costos de transferencia por NAT Gateway) y auditoría forense de seguridad, cuyo pipeline en batch y streaming ya se encuentra implementado y disponible en mi repositorio de GitHub.</p>
+
+  <p>A continuación presento el desarrollo conceptual solicitado:</p>
+
+  <hr style="border: 0; border-top: 1px solid #cbd5e0; margin: 25px 0;" />
+
+  <!-- 1. TABLA COMPARATIVA -->
+  <h3 style="color: #1a365d; border-bottom: 2px solid #2b6cb0; padding-bottom: 6px;">1. Tabla Comparativa: Apache Hadoop (MapReduce) vs. Apache Spark</h3>
+
+  <table style="width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 13px;">
+    <thead>
+      <tr style="background-color: #1a365d; color: #ffffff; text-align: left;">
+        <th style="padding: 10px 12px; border: 1px solid #cbd5e0; width: 20%;">Criterio</th>
+        <th style="padding: 10px 12px; border: 1px solid #cbd5e0; width: 40%;">Apache Hadoop (MapReduce)</th>
+        <th style="padding: 10px 12px; border: 1px solid #cbd5e0; width: 40%;">Apache Spark</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr style="background-color: #ffffff;">
+        <td style="padding: 9px 12px; border: 1px solid #cbd5e0; font-weight: bold; color: #2c5282;">Arquitectura de Procesamiento</td>
+        <td style="padding: 9px 12px; border: 1px solid #cbd5e0;"><strong>Centrada en disco (Disk-centric):</strong> El flujo se divide en fases rígidas <code>Map</code> y <code>Reduce</code>. Cada etapa intermedia escribe y lee obligatoriamente en disco (HDFS), generando un alto costo de I/O y serialización.</td>
+        <td style="padding: 9px 12px; border: 1px solid #cbd5e0;"><strong>Centrada en memoria (In-Memory Processing):</strong> Emplea un Grafo Acíclico Dirigido (DAG) que encadena transformaciones en la memoria RAM de los ejecutores, reduciendo a mínimos los accesos a disco físico.</td>
+      </tr>
+      <tr style="background-color: #f7fafc;">
+        <td style="padding: 9px 12px; border: 1px solid #cbd5e0; font-weight: bold; color: #2c5282;">Rendimiento y Latencia</td>
+        <td style="padding: 9px 12px; border: 1px solid #cbd5e0;">Latencia alta. Rendimiento bajo en algoritmos iterativos o interactivos debido a la persistencia continua de estados intermedios en HDFS.</td>
+        <td style="padding: 9px 12px; border: 1px solid #cbd5e0;">Hasta <strong>100 veces más rápido en memoria</strong> y <strong>10 veces más rápido en disco</strong> frente a MapReduce. Óptimo para cómputo iterativo y consultas interactivas.</td>
+      </tr>
+      <tr style="background-color: #ffffff;">
+        <td style="padding: 9px 12px; border: 1px solid #cbd5e0; font-weight: bold; color: #2c5282;">Abstracción de Datos</td>
+        <td style="padding: 9px 12px; border: 1px solid #cbd5e0;">Pares clave-valor (<code>&lt;Key, Value&gt;</code>) de bajo nivel sobre bloques de archivos planos en HDFS.</td>
+        <td style="padding: 9px 12px; border: 1px solid #cbd5e0;">Abstracciones de alto nivel enriquecidas: <strong>RDD</strong> (colecciones distribuidas), <strong>DataFrames</strong> (datos estructurados con esquema) y <strong>Datasets</strong> (tipado estático).</td>
+      </tr>
+      <tr style="background-color: #f7fafc;">
+        <td style="padding: 9px 12px; border: 1px solid #cbd5e0; font-weight: bold; color: #2c5282;">Tolerancia a Fallos</td>
+        <td style="padding: 9px 12px; border: 1px solid #cbd5e0;">Basada en replicación física de bloques en disco (HDFS, factor 3 por defecto). Si falla una tarea, se lee nuevamente el bloque de disco.</td>
+        <td style="padding: 9px 12px; border: 1px solid #cbd5e0;">Basada en el <strong>Linaje del DAG (Lineage Graph)</strong>. Si una partición en memoria se pierde, Spark reconstruye determinísticamente solo esa partición re-ejecutando sus transformaciones origen.</td>
+      </tr>
+      <tr style="background-color: #ffffff;">
+        <td style="padding: 9px 12px; border: 1px solid #cbd5e0; font-weight: bold; color: #2c5282;">Cargas de Trabajo</td>
+        <td style="padding: 9px 12px; border: 1px solid #cbd5e0;">Exclusivamente procesamiento por lotes (Batch). Requiere herramientas satélites del ecosistema (ej. Storm o Flink para streaming, Mahout para ML).</td>
+        <td style="padding: 9px 12px; border: 1px solid #cbd5e0;"><strong>Plataforma unificada:</strong> Batch (Spark Core), Consultas relacionales (Spark SQL), Tiempo real (Spark Streaming), Machine Learning (MLlib) y Grafos (GraphX).</td>
+      </tr>
+      <tr style="background-color: #f7fafc;">
+        <td style="padding: 9px 12px; border: 1px solid #cbd5e0; font-weight: bold; color: #2c5282;">Gestión de Recursos</td>
+        <td style="padding: 9px 12px; border: 1px solid #cbd5e0;">Acoplado principalmente a YARN (Yet Another Resource Negotiator).</td>
+        <td style="padding: 9px 12px; border: 1px solid #cbd5e0;">Despliegue agnóstico: Standalone, Apache Hadoop YARN, Apache Mesos o contenedores en Kubernetes.</td>
+      </tr>
+      <tr style="background-color: #ffffff;">
+        <td style="padding: 9px 12px; border: 1px solid #cbd5e0; font-weight: bold; color: #2c5282;">Casos de Uso Típicos</td>
+        <td style="padding: 9px 12px; border: 1px solid #cbd5e0;">ETLs nocturnos masivos donde la latencia no es un factor crítico y prima el bajo costo de almacenamiento en frío.</td>
+        <td style="padding: 9px 12px; border: 1px solid #cbd5e0;">Analítica en tiempo real (Fast Data), Machine Learning iterativo, consultas interactivas de BI y procesamiento analítico de eventos.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- 2. RDDs -->
+  <h3 style="color: #1a365d; border-bottom: 2px solid #2b6cb0; padding-bottom: 6px; margin-top: 30px;">2. Resilient Distributed Datasets (RDDs): Conceptos, Propiedades y Operaciones</h3>
+
+  <h4 style="color: #2b6cb0; margin-bottom: 8px;">2.1 Definición Conceptual</h4>
+  <p>El <strong>RDD (Resilient Distributed Dataset)</strong> es la abstracción fundamental de datos en Apache Spark. Es una colección distribuida de elementos tolerante a fallos, particionada a través de los nodos ejecutores del clúster, que puede procesarse de manera concurrente en memoria.</p>
+
+  <h4 style="color: #2b6cb0; margin-bottom: 8px;">2.2 Propiedades Fundamentales</h4>
+  <ul>
+    <li><strong>Inmutabilidad:</strong> Una vez creado, el RDD no puede ser alterado en memoria (es de solo lectura). Cualquier operación aplicada deriva un nuevo RDD. Esto elimina condiciones de carrera en entornos concurrentes y garantiza consistencia y tolerancia a fallos.</li>
+    <li><strong>Particionamiento:</strong> Los datos del RDD se dividen lógicamente en fragmentos denominados <strong>particiones</strong>. Cada partición es asignada y computada por un hilo o núcleo en un nodo ejecutor (<em>Executor</em>), definiendo la granularidad de paralelismo del trabajo.</li>
+    <li><strong>Resiliencia mediante Linaje (DAG):</strong> Spark almacena el grafo de transformaciones que dieron origen al RDD. Ante la caída de un nodo, Spark no requiere recuperar volcados pesados de memoria: reconstruye la partición afectada re-ejecutando únicamente el camino de transformaciones registrado en el linaje.</li>
+  </ul>
+
+  <h4 style="color: #2b6cb0; margin-bottom: 8px;">2.3 Tipos de Operaciones y Evaluación Perezosa (Lazy Evaluation)</h4>
+  <p>En Spark, las transformaciones operan bajo <strong>Evaluación Perezosa (Lazy Evaluation)</strong>: el motor no ejecuta los cálculos de inmediato, sino que los anota en el plan lógico del DAG. La ejecución física solo se inicia cuando se invoca una <strong>Acción</strong>.</p>
+
+  <div style="background-color: #ebf8ff; border-left: 4px solid #3182ce; padding: 12px 16px; margin: 15px 0;">
+    <p style="margin: 0; font-weight: bold; color: #2b6cb0;">Transformaciones (Narrow vs. Wide Dependencies):</p>
+    <ul style="margin: 8px 0 0 0; padding-left: 20px;">
+      <li><strong>Dependencias Estrechas (Narrow - sin shuffle de red):</strong> Cada partición padre alimenta a lo sumo a una partición hija.
+        <ul>
+          <li><code>map(func)</code>: Aplica una función elemento a elemento preservando la dimensionalidad.</li>
+          <li><code>filter(func)</code>: Retorna un RDD únicamente con los registros que cumplen una condición booleana.</li>
+          <li><code>flatMap(func)</code>: Similar a <code>map</code>, pero permite que un elemento de entrada genere múltiples elementos de salida (aplana secuencias).</li>
+        </ul>
+      </li>
+      <li style="margin-top: 6px;"><strong>Dependencias Anchas (Wide - con shuffle de red):</strong> Múltiples particiones hijas dependen de particiones de diferentes padres, obligando a transferir datos por la red (<strong>Shuffle</strong>).
+        <ul>
+          <li><code>groupByKey()</code>: Agrupa los valores de cada clave en una lista. Al no pre-agregar datos en memoria local antes de transferirlos por la red, consume excesivo ancho de banda y puede provocar fallos de memoria (<code>OutOfMemoryError</code>).</li>
+          <li><code>reduceByKey(func)</code>: Agrega los valores por clave mediante una combinación previa local (<em>map-side combine</em>) antes del shuffle global por la red, resultando sustancialmente más eficiente que <code>groupByKey</code>.</li>
+        </ul>
+      </li>
+    </ul>
+  </div>
+
+  <div style="background-color: #f7fafc; border-left: 4px solid #4a5568; padding: 12px 16px; margin: 15px 0;">
+    <p style="margin: 0; font-weight: bold; color: #2d3748;">Acciones (Materialización del Cómputo):</p>
+    <ul style="margin: 8px 0 0 0; padding-left: 20px;">
+      <li><code>collect()</code>: Retorna todos los elementos del RDD al programa conductor (<em>Driver</em>). <em>(Debe usarse con precaución en Big Data para no desbordar la RAM del Driver)</em>.</li>
+      <li><code>count()</code>: Cuenta el total de elementos presentes en el RDD.</li>
+      <li><code>take(n)</code>: Extrae únicamente los primeros <code>n</code> elementos, evitando leer particiones innecesarias.</li>
+      <li><code>reduce(func)</code>: Consolida todos los elementos mediante una función binaria asociativa y conmutativa.</li>
+    </ul>
+  </div>
+
+  <!-- 3. DATAFRAMES -->
+  <h3 style="color: #1a365d; border-bottom: 2px solid #2b6cb0; padding-bottom: 6px; margin-top: 30px;">3. DataFrames en Apache Spark: Arquitectura y Ventajas sobre RDDs</h3>
+
+  <h4 style="color: #2b6cb0; margin-bottom: 8px;">3.1 Concepto</h4>
+  <p>Un <strong>DataFrame</strong> es una colección distribuida de registros organizados en columnas con nombre y tipos de datos definidos (<strong>Schema</strong>), análoga conceptualmente a una tabla relacional en SQL, pero con escalabilidad horizontal en clúster.</p>
+
+  <h4 style="color: #2b6cb0; margin-bottom: 8px;">3.2 Ventajas Técnicas y Arquitectónicas frente a los RDDs</h4>
+  <ol>
+    <li><strong>Conocimiento de Esquema (Schema-Awareness):</strong> Mientras que los RDDs tratan los registros como objetos opacos en Python/Java, Spark comprende la estructura interna de los campos en un DataFrame, lo que le permite optimizar el almacenamiento y el procesamiento.</li>
+    <li><strong>Optimizador de Consultas Catalyst:</strong> Convierte las sentencias declarativas en planes físicos optimizados mediante:
+      <ul>
+        <li><em>Pushdown Predicates (Empuje de predicados):</em> Aplica los filtros directamente en la capa de almacenamiento para no transferir a memoria filas innecesarias.</li>
+        <li><em>Projection Pruning (Poda de columnas):</em> Carga exclusivamente las columnas consultadas, descartando el resto.</li>
+      </ul>
+    </li>
+    <li><strong>Motor de Ejecución Tungsten:</strong>
+      <ul>
+        <li><em>Gestión de Memoria Off-Heap:</em> Representa los datos en formato binario compacto fuera del heap de la máquina virtual Java, eliminando las pausas de <em>Garbage Collection (GC)</em> y el overhead de serialización.</li>
+        <li><em>Whole-Stage Code Generation:</em> Funde múltiples transformaciones en una sola función en bytecode durante la ejecución en caliente, aprovechando la caché y registros de la CPU.</li>
+      </ul>
+    </li>
+    <li><strong>Unificación con Spark SQL:</strong> Permite combinar sintaxis declarativa de DataFrames con consultas SQL estándar de forma nativa.</li>
+  </ol>
+
+  <!-- 4. KAFKA -->
+  <h3 style="color: #1a365d; border-bottom: 2px solid #2b6cb0; padding-bottom: 6px; margin-top: 30px;">4. Arquitectura y Componentes Clave de Apache Kafka</h3>
+
+  <h4 style="color: #2b6cb0; margin-bottom: 8px;">4.1 Diagrama Conceptual de Arquitectura</h4>
+
+  <!-- Diagrama Visual Kafka -->
+  <div style="background-color: #f8fafc; border: 1px solid #cbd5e0; border-radius: 8px; padding: 20px; margin: 20px 0; font-family: Arial, sans-serif;">
+
+    <!-- 1. PRODUCTORES -->
+    <div style="background-color: #ebf8ff; border: 2px solid #3182ce; border-radius: 6px; padding: 12px 16px; text-align: center; max-width: 520px; margin: 0 auto; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+      <strong style="color: #2b6cb0; font-size: 14px;">📡 PRODUCTORES DE EVENTOS (Producers / Ingest)</strong>
+      <div style="font-size: 12px; color: #4a5568; margin-top: 4px;">Agentes de Telemetría · AWS VPC Flow Logs Generator (<code>kafka_producer.py</code>)</div>
+    </div>
+
+    <!-- FLECHA 1 -->
+    <div style="text-align: center; margin: 12px 0;">
+      <span style="display: inline-block; background-color: #edf2f7; border: 1px solid #cbd5e0; color: #2d3748; font-size: 11px; font-weight: bold; padding: 4px 14px; border-radius: 12px;">
+        ⬇ 1. Inyección continua de mensajes en formato JSON (Push) ⬇
+      </span>
+    </div>
+
+    <!-- 2. CLÚSTER KAFKA -->
+    <div style="background-color: #ffffff; border: 2px solid #2b6cb0; border-radius: 8px; padding: 16px; margin: 0 auto; max-width: 820px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+      
+      <div style="border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 12px;">
+        <table style="width: 100%; border: none; margin: 0;">
+          <tr>
+            <td style="border: none; padding: 0; text-align: left;">
+              <strong style="color: #1a365d; font-size: 15px;">🏢 CLÚSTER DE APACHE KAFKA (Brokers Distributed Commit Log)</strong>
+            </td>
+            <td style="border: none; padding: 0; text-align: right;">
+              <span style="background-color: #edf2f7; color: #4a5568; font-size: 11px; font-weight: bold; padding: 3px 8px; border-radius: 4px; border: 1px solid #cbd5e0;">
+                ⚡ Quórum / Metadatos: ZooKeeper / KRaft
+              </span>
+            </td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- Topic Box -->
+      <div style="background-color: #f7fafc; border: 1px dashed #718096; border-radius: 6px; padding: 12px;">
+        <div style="margin-bottom: 10px; color: #2d3748; font-weight: bold; font-size: 13px;">
+          📁 Topic: <code style="background-color: #edf2f7; padding: 2px 6px; border-radius: 4px; color: #b83280; font-size: 13px;">vpc_flow_logs</code> 
+          <span style="font-size: 11px; font-weight: normal; color: #718096;">(Log inmutable append-only particionado para escalamiento horizontal)</span>
+        </div>
+
+        <!-- Partitions Table -->
+        <table style="width: 100%; border-collapse: collapse; font-size: 12px; background-color: #ffffff; border: 1px solid #e2e8f0;">
+          <tr style="border-bottom: 1px solid #e2e8f0;">
+            <td style="padding: 10px 12px; font-weight: bold; width: 32%; color: #2c5282; border-right: 1px solid #e2e8f0;">
+              Partición 0 <span style="font-size: 10px; background-color: #c6f6d5; color: #22543d; padding: 2px 6px; border-radius: 3px; font-weight: bold;">Leader: Broker 1</span>
+            </td>
+            <td style="padding: 10px 12px;">
+              <span style="font-family: monospace; background-color: #edf2f7; border: 1px solid #cbd5e0; padding: 3px 6px; border-radius: 3px; margin-right: 4px; font-size: 11px;">Offset 0</span>
+              <span style="font-family: monospace; background-color: #edf2f7; border: 1px solid #cbd5e0; padding: 3px 6px; border-radius: 3px; margin-right: 4px; font-size: 11px;">Offset 1</span>
+              <span style="font-family: monospace; background-color: #edf2f7; border: 1px solid #cbd5e0; padding: 3px 6px; border-radius: 3px; margin-right: 4px; font-size: 11px;">Offset 2</span>
+              <span style="font-family: monospace; color: #718096; font-size: 11px;">... [Offset N]</span>
+            </td>
+          </tr>
+          <tr style="border-bottom: 1px solid #e2e8f0; background-color: #fcfdfd;">
+            <td style="padding: 10px 12px; font-weight: bold; color: #2c5282; border-right: 1px solid #e2e8f0;">
+              Partición 1 <span style="font-size: 10px; background-color: #c6f6d5; color: #22543d; padding: 2px 6px; border-radius: 3px; font-weight: bold;">Leader: Broker 2</span>
+            </td>
+            <td style="padding: 10px 12px;">
+              <span style="font-family: monospace; background-color: #edf2f7; border: 1px solid #cbd5e0; padding: 3px 6px; border-radius: 3px; margin-right: 4px; font-size: 11px;">Offset 0</span>
+              <span style="font-family: monospace; background-color: #edf2f7; border: 1px solid #cbd5e0; padding: 3px 6px; border-radius: 3px; margin-right: 4px; font-size: 11px;">Offset 1</span>
+              <span style="font-family: monospace; background-color: #edf2f7; border: 1px solid #cbd5e0; padding: 3px 6px; border-radius: 3px; margin-right: 4px; font-size: 11px;">Offset 2</span>
+              <span style="font-family: monospace; color: #718096; font-size: 11px;">... [Offset N]</span>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 12px; font-weight: bold; color: #2c5282; border-right: 1px solid #e2e8f0;">
+              Partición 2 <span style="font-size: 10px; background-color: #c6f6d5; color: #22543d; padding: 2px 6px; border-radius: 3px; font-weight: bold;">Leader: Broker 3</span>
+            </td>
+            <td style="padding: 10px 12px;">
+              <span style="font-family: monospace; background-color: #edf2f7; border: 1px solid #cbd5e0; padding: 3px 6px; border-radius: 3px; margin-right: 4px; font-size: 11px;">Offset 0</span>
+              <span style="font-family: monospace; background-color: #edf2f7; border: 1px solid #cbd5e0; padding: 3px 6px; border-radius: 3px; margin-right: 4px; font-size: 11px;">Offset 1</span>
+              <span style="font-family: monospace; background-color: #edf2f7; border: 1px solid #cbd5e0; padding: 3px 6px; border-radius: 3px; margin-right: 4px; font-size: 11px;">Offset 2</span>
+              <span style="font-family: monospace; color: #718096; font-size: 11px;">... [Offset N]</span>
+            </td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- FLECHA 2 -->
+    <div style="text-align: center; margin: 12px 0;">
+      <span style="display: inline-block; background-color: #edf2f7; border: 1px solid #cbd5e0; color: #2d3748; font-size: 11px; font-weight: bold; padding: 4px 14px; border-radius: 12px;">
+        ⬇ 2. Consumo continuo distribuido vía extracción (Pull) sin contención ⬇
+      </span>
+    </div>
+
+    <!-- 3. CONSUMER GROUP -->
+    <div style="background-color: #f0fff4; border: 2px solid #38a169; border-radius: 8px; padding: 16px; margin: 0 auto; max-width: 820px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+      <div style="border-bottom: 2px solid #c6f6d5; padding-bottom: 8px; margin-bottom: 12px;">
+        <strong style="color: #22543d; font-size: 15px;">⚡ GRUPO DE CONSUMO: <code>spark-streaming-group</code> (Apache Spark)</strong>
+        <div style="font-size: 11px; color: #4a5568; margin-top: 2px;">Lectura concurrente: Cada ejecutor de Spark atiende una partición exclusiva del topic</div>
+      </div>
+
+      <table style="width: 100%; border-collapse: collapse; font-size: 12px; background-color: #ffffff; border: 1px solid #c6f6d5;">
+        <tr style="border-bottom: 1px solid #e2e8f0;">
+          <td style="padding: 8px 12px; font-weight: bold; width: 35%; color: #22543d; border-right: 1px solid #e2e8f0;">⚙️ Spark Executor / Worker 1</td>
+          <td style="padding: 8px 12px; color: #4a5568;">Lee <strong>Partición 0</strong> ➔ Agregación en Ventana de 1 minuto</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #e2e8f0; background-color: #f7fafc;">
+          <td style="padding: 8px 12px; font-weight: bold; color: #22543d; border-right: 1px solid #e2e8f0;">⚙️ Spark Executor / Worker 2</td>
+          <td style="padding: 8px 12px; color: #4a5568;">Lee <strong>Partición 1</strong> ➔ Agregación en Ventana de 1 minuto</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 12px; font-weight: bold; color: #22543d; border-right: 1px solid #e2e8f0;">⚙️ Spark Executor / Worker 3</td>
+          <td style="padding: 8px 12px; color: #4a5568;">Lee <strong>Partición 2</strong> ➔ Agregación en Ventana de 1 minuto</td>
+        </tr>
+      </table>
+
+      <div style="margin-top: 12px; background-color: #ffffff; border: 1px solid #9ae6b4; padding: 8px 14px; border-radius: 4px; font-size: 12px; color: #22543d; text-align: center; font-weight: bold;">
+        🎯 Salida en Tiempo Real: Throughput acumulado (MB), Proyección de Costo NAT Gateway y Alertas de Seguridad en Consola
+      </div>
+    </div>
+
+  </div>
+
+  <h4 style="color: #2b6cb0; margin-bottom: 8px;">4.2 Conceptos Clave</h4>
+  <ul>
+    <li><strong>Topic (Tema):</strong> Canal lógico donde se publican los mensajes. Funciona como un log inmutable y ordenado donde los nuevos eventos siempre se añaden al final (<em>append-only</em>).</li>
+    <li><strong>Partitions (Particiones):</strong> Subdivisión física de un topic distribuida a través de los nodos del clúster. Es la <strong>unidad fundamental de paralelismo y escalamiento horizontal</strong> en Kafka. Dentro de cada partición, cada mensaje tiene asignado un identificador único y secuencial denominado <strong>Offset</strong>.</li>
+    <li><strong>Brokers:</strong> Servidores que conforman el clúster de Kafka. Se encargan de almacenar los datos en disco, atender solicitudes de productores/consumidores y mantener la replicación (un broker actúa como <em>Leader</em> de la partición para lecturas/escrituras y otros como <em>Followers</em> de respaldo).</li>
+    <li><strong>Producers (Productores):</strong> Aplicaciones que escriben eventos en los topics, definiendo a qué partición enviar mediante balanceo <em>Round-Robin</em> o dispersión por clave (<em>Key Hash</em>).</li>
+    <li><strong>Consumers y Consumer Groups:</strong> Procesos que leen mensajes desde los topics mediante un modelo de extracción (<em>Pull</em>). En un <strong>Consumer Group</strong>, cada partición es asignada a un único consumidor del grupo, lo que permite paralelizar la lectura de forma coordinada y sin contención.</li>
+  </ul>
+
+  <!-- 5. AVANCE TÉCNICO -->
+  <h3 style="color: #1a365d; border-bottom: 2px solid #2b6cb0; padding-bottom: 6px; margin-top: 30px;">5. Avance Técnico Individual y Repositorio de Código</h3>
+
+  <p>Para la implementación práctica de la guía, he seleccionado el problema de <strong>Análisis Forense y Control de Costos (FinOps) sobre AWS VPC Flow Logs (versión 2)</strong>. En el repositorio ya se encuentra disponible el código fuente documentado:</p>
+  <ul>
+    <li><strong>Procesamiento Batch (<code>batch_analysis.py</code>):</strong> Limpieza, agregaciones por servicio mediante RDDs (<code>map</code>, <code>filter</code>, <code>reduceByKey</code>) y cálculo de costos por NAT Gateway con DataFrames.</li>
+    <li><strong>Procesamiento Streaming (<code>kafka_producer.py</code> y <code>spark_streaming_consumer.py</code>):</strong> Inyección de telemetría a Kafka y consumo en micro-batches de Spark Streaming con agregaciones en ventanas de 1 minuto.</li>
+  </ul>
+
+  <p style="background-color: #edf2f7; padding: 12px; border-left: 4px solid #2b6cb0;">
+    🔗 <strong>Enlace al repositorio GitHub:</strong><br />
+    <a href="https://github.com/carlosmoradev/UNAD_BigData_Tarea3_Carlos_Mora" target="_blank" style="color: #2b6cb0; font-weight: bold; text-decoration: underline;">https://github.com/carlosmoradev/UNAD_BigData_Tarea3_Carlos_Mora</a>
+  </p>
+
+  <!-- REFERENCIAS -->
+  <h3 style="color: #1a365d; border-bottom: 2px solid #2b6cb0; padding-bottom: 6px; margin-top: 30px;">Referencias Bibliográficas (Normas APA 7)</h3>
+
+  <ul style="font-size: 13px; color: #4a5568;">
+    <li>Apache Software Foundation. (2024). <em>Apache Spark documentation: RDD programming guide and Spark SQL</em>. https://spark.apache.org/docs/latest/</li>
+    <li>Apache Software Foundation. (2024). <em>Apache Kafka documentation: Core concepts and architecture</em>. https://kafka.apache.org/documentation/</li>
+    <li>Gélvez García, N. Y., Díaz, R. P., & Vera, N. E. (2012). Hadoop descripción e instalación en distribuciones Linux. <em>Revista Entérese: Boletín Científico Universitario</em>, (20), 45-56.</li>
+    <li>Macías, M., & Gómez, M. (2015). <em>Introducción a Apache Spark: para empezar a programar el big data</em> (pp. 27-40). Editorial UOC.</li>
+    <li>Maldonado, S., & Vásquez, C. (2022). <em>Analytics y Big Data: Ciencia de los Datos aplicada al mundo de los negocios</em> (pp. 185-195). RIL editores.</li>
+    <li>Montoya Suárez, L., & Gil Restrepo, G. A. (2018). <em>Actualidad e importancia de la implementación de Big Data utilizando las herramientas Hadoop y Spark</em>. Repositorio Institucional UNAD.</li>
+    <li>Velázquez Esquivel, C. I., Ruiz Ayala, J., García Muñoz, L. H., & García Villareal, L. J. (2017). Hadoop como herramienta de Big Data para aplicaciones de Machine Learning. <em>Congreso Internacional de Investigación Academia Journals</em>, 9(3), 1120-1125.</li>
+  </ul>
+
+  <p style="margin-top: 25px;">Quedo atento a sus comentarios y sugerencias para continuar coordinando la consolidación grupal.</p>
+
+  <p>Cordialmente,</p>
+
+  <p>
+    <strong>Carlos Mario Mora Restrepo</strong><br />
+    Código: 98636340<br />
+    Grupo No. 27 – Big Data
+  </p>
+
+</div>
