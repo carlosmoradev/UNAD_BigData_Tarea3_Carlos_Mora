@@ -8,6 +8,7 @@
 * **Universidad:** Universidad Nacional Abierta y a Distancia (UNAD)
 * **Escuela:** Escuela de Ciencias Básicas, Tecnología e Ingeniería (ECBTI)
 * **Programa:** Ingeniería de Sistemas — Octubre de 2026
+* **Video explicativo:** https://da.gd/sGlFG
 
 ---
 
@@ -104,12 +105,16 @@ pip install pyspark kafka-python
 ### 3.3 Ejecución del Pipeline en Streaming (Kafka + Spark Streaming)
 
 #### Paso 1: Iniciar Zookeeper y Kafka (en la Máquina Virtual)
+Se asume Apache Kafka 3.9.2 (build Scala 2.12) instalado en `/opt/Kafka`. Primero verificar si ya están corriendo (`jps` debe mostrar `QuorumPeerMain` y `Kafka`); si es así, omitir este paso, porque un segundo arranque falla por puerto ocupado.
 ```bash
+jps
+
 # Iniciar servidor Zookeeper
-sudo /opt/Kafka/bin/zookeeper-server-start.sh /opt/Kafka/config/zookeeper.properties &
+nohup /opt/Kafka/bin/zookeeper-server-start.sh /opt/Kafka/config/zookeeper.properties > /tmp/zk.log 2>&1 &
+sleep 8
 
 # Iniciar Broker de Kafka
-sudo /opt/Kafka/bin/kafka-server-start.sh /opt/Kafka/config/server.properties &
+nohup /opt/Kafka/bin/kafka-server-start.sh /opt/Kafka/config/server.properties > /tmp/kafka.log 2>&1 &
 ```
 
 #### Paso 2: Crear el Topic en Kafka
@@ -127,9 +132,10 @@ python3 kafka_producer.py --topic vpc_flow_logs --delay 0.8
 ```
 
 #### Paso 4: Ejecutar el Consumidor de Spark Streaming (Terminal 2)
+El consumidor lee desde `latest`: arrancarlo **antes** del productor, o no verá los eventos ya enviados. Necesita el conector de Kafka, por eso se lanza con `spark-submit --packages` (con `python3` directo falla con `Failed to find data source: kafka`). En la primera ejecución descarga el paquete y la ventana de 1 minuto sale vacía hasta recibir datos.
 ```bash
-spark-submit \
-  --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.3 \
+/opt/spark/bin/spark-submit \
+  --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1 \
   spark_streaming_consumer.py --topic vpc_flow_logs
 ```
 
